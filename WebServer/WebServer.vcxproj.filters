@@ -18,5 +18,28 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="startup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="error.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="helper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="startup.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="error.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="common.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="helper.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
