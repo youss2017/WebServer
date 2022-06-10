@@ -27,6 +27,9 @@
     <ClCompile Include="helper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HTTPHeader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="startup.hpp">
@@ -41,5 +44,16 @@
     <ClInclude Include="helper.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="HTTPHeader.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="page\index.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="page\favicon.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>
