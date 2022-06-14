@@ -27,7 +27,7 @@
     <ClCompile Include="helper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HTTPHeader.cpp">
+    <ClCompile Include="HTTPResponse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,7 +44,7 @@
     <ClInclude Include="helper.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="HTTPHeader.hpp">
+    <ClInclude Include="HTTPResponse.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

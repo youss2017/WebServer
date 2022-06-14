@@ -3,10 +3,24 @@
 #include "helper.hpp"
 #include <sstream>
 #include <fstream>
+#include "HTTPResponse.hpp"
+#include <zlib/zlib.h>
 
 #pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "zlibstatic.lib")
 
 using namespace std;
+
+const char* pageError404 =
+"<!doctype html>\n"
+"<!-- Requested resource could not be found -->\n"
+"<html lang=\"en-us\">\n"
+"<head><title>Error 404</title></head>\n"
+"<body>\n"
+"<center><h1>404 Not Found</h1></center>\n"
+"</body>\n"
+"</html>\n"
+;
 
 std::string HeaderBody() {
 	stringstream ss;
@@ -23,25 +37,31 @@ const char* get_filename_ext(const char* filename) {
 	return dot + 1;
 }
 
-stringstream HTTPEvaluate(std::string request, int pos) {
+string HTTPEvaluate(std::string request, int pos) {
 	int pos2 = WS_FindFirstIndexOf(request, "/");
 	std::string file = WS_Trim(request.substr(pos2 + 1, pos - 5));
 	cout << "'" << file << "'" << endl;
-
-	stringstream response;
-
-	auto ReadPageFile = [](const std::string& path, std::string& outContentType) throw() -> stringstream {
+	auto ReadPageFile = [](const std::string& path, std::string& outContentType, bool& found) throw() -> stringstream {
 		std::ifstream io("page/" + path);
 		stringstream input;
 		if (io) {
 			const char* ext = get_filename_ext(WS_LowerCase(path).c_str());
 			outContentType = WS_GetMIMECode(ext);
 			input << io.rdbuf();
+			found = true;
 		}
 		else {
+			found = false;
 			outContentType = "text/html";
-			input << "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr/></body></html>";
+			input << pageError404;
 		}
+		std::string temp0 = input.str();
+		std::string temp1;
+		temp1.resize(temp0.size() + 12);
+		uLongf dstSize = temp1.size();
+		compress((Bytef*)temp1.c_str(), &dstSize, (Bytef*)temp0.c_str(), temp0.size());
+		stringstream output;
+		output << temp1.substr(0, dstSize);
 		return input;
 	};
 
@@ -51,27 +71,25 @@ stringstream HTTPEvaluate(std::string request, int pos) {
 	}
 
 	string contentType;
-	auto input = ReadPageFile(file, contentType);
+	bool found;
+	auto input = ReadPageFile(file, contentType, found);
 
 	cout << "Content-Type: " << contentType << endl;
 
-	auto input_string = input.str();
+	HTTPResponse response = HTTPResponse(found ? HTTPStatusCode::CODE_200_OK : HTTPStatusCode::CODE_404_NOT_FOUND);
+	response.SetLastModified(WS_GetFileLastModified("page/" + file));
+	response.SetContentType(contentType, false);
+	response.SetConnection(true);
+	response.SetContentEncoding(contentType);
+	response.SetBodyContent(input);
 
-	response << "HTTP/1.1 OK 200\n" <<
-		HeaderBody() <<
-		"Last-Modified: " << WS_GetFileLastModified("page/" + file) << "\n" <<
-		"Content-Type: " << contentType << "\n" <<
-		"Content-Length: " << input_string.length() << "\n" <<
-		"\r\n" <<
-		input_string;
-
-	return response;
+	return response.header.str();
 }
 
 DWORD WINAPI Exp(LPVOID Param) {
 	SOCKET client = (SOCKET)Param;
 
-	auto SendHTTPMessage = [client](std::stringstream& _msg){
+	auto SendHTTPMessage = [client](std::stringstream& _msg) {
 		std::string msg = _msg.str();
 		WSABUF bufDesc;
 		bufDesc.len = msg.length();
@@ -95,15 +113,17 @@ DWORD WINAPI Exp(LPVOID Param) {
 		// Parse Response
 		int pos = WS_FindFirstIndexOf(recvBuf, "HTTP");
 		if (pos == -1) {
-			stringstream response;
-			response
-				<< "HTTP/1.1 404 Not Found\n" <<
-				HeaderBody() <<
-				"\r\n";
-			SendHTTPMessage(response);
+			HTTPResponse response = HTTPResponse(HTTPStatusCode::CODE_404_NOT_FOUND);
+			response.SetConnection(false);
+			response.SetContentType("text/html", false);
+			const char* page404 = "<!doctype html><html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr/></body></html>";
+			response.SetBodyContent(page404, strlen(page404));
+			SendHTTPMessage(response.header);
 		}
 		else {
-			std::stringstream response = HTTPEvaluate(recvBuf, pos);
+			std::stringstream response;
+			response << HTTPEvaluate(recvBuf, pos);
+			cout << "[" << response.str() << "]\n";
 			SendHTTPMessage(response);
 		}
 	}
@@ -113,7 +133,6 @@ DWORD WINAPI Exp(LPVOID Param) {
 }
 
 int main(int argc, char** argv) {
-
 	cout << "Welcome to HTTP/1.1 WebServer" << endl;
 
 	int port = 80;
@@ -148,7 +167,7 @@ int main(int argc, char** argv) {
 		else {
 			cout << "Client connected with an error." << endl;
 		}
-		
+
 	}
 
 	closesocket(server);

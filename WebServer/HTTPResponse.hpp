@@ -18,7 +18,6 @@ enum class HTTPStatusCode : unsigned int {
 	CODE_200_OK,
 	CODE_201_CREATED,
 	CODE_202_ACCEPTED,
-	CODE_203,
 	CODE_204_NO_CONTENT,
 	CODE_205_RESET_CONTENT,
 	CODE_301_MOVED_PERMT,
@@ -30,13 +29,22 @@ enum class HTTPStatusCode : unsigned int {
 	CODE_404_NOT_FOUND
 };
 
-class HTTPHeader {
+class HTTPResponse {
 
 public:
-	HTTPHeader(HTTPStatusCode status);
+	HTTPResponse(HTTPStatusCode status);
 
-	std::string GetHTTPResponse(char* pMessageBody, size_t size);
+	void SetContentType(const std::string& ct_or_ext, bool isExt);
+	void SetLastModified(const std::string& gmtDate);
+	void SetConnection(bool keepAlive);
+	void SetAcceptEncoding(const std::string& encoding);
+	void SetAcceptLanguage(const std::string& lang = "en-us");
+	void SetContentEncoding(const std::string& encoding);
+	void SetContentLanguage(const std::string& lang);
+	void SetLocation(const std::string& location);
 
-private:
+	void SetBodyContent(const char* pMessageBody, size_t size);
+	void SetBodyContent(const std::stringstream& content);
+		
 	std::stringstream header;
 };

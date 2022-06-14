@@ -37,9 +37,14 @@ static std::time_t to_time_t(TP tp)
 std::string WS_GetFileLastModified(const std::string& path)
 {
 	try {
-		auto t = to_time_t(
-			std::filesystem::last_write_time(path));
-		return WS_GMTFormat(t);
+		if (std::filesystem::exists(path)) {
+			auto t = to_time_t(
+				std::filesystem::last_write_time(path));
+			return WS_GMTFormat(t);
+		}
+		else {
+			return WS_GetCurrentGMTime();
+		}
 	}
 	catch (std::exception&) {
 		return WS_GetCurrentGMTime();

@@ -1,0 +1,12 @@
+[submodule "submodules/gzip-hpp"]
+	path = submodules/gzip-hpp
+	url = https://github.com/mapbox/gzip-hpp
+[submodule "submodules/gzip"]
+	path = submodules/gzip
+	url = https://github.com/kunpengcompute/gzip
+[submodule "submodules/zlib"]
+	path = submodules/zlib
+	url = https://github.com/madler/zlib
+[submodule "StringTools"]
+	path = StringTools
+	url = https://github.com/youss2017/StringTools
