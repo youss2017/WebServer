@@ -131,47 +131,12 @@ std::string WS_GetMIMECode(const std::string& extension) {
 		s_ExtToMimeMap.insert({ "3g2", "video/3gpp2" });
 		s_ExtToMimeMap.insert({ "7z", "application/x-7z-compressed" });
 	}
-	std::string ext = WS_ReplaceAll(WS_LowerCase(extension), " ", "");
+	std::string ext = st_ReplaceAll(st_LowerCase(extension), " ", "");
 	std::cout << "'" << ext << "' --> " << s_ExtToMimeMap[ext] << "\n";
 	return s_ExtToMimeMap[ext];
 }
 
 #pragma region STRING_UTILS
-
-bool  WS_Contains(const std::string& line, const char* str)
-{
-	int strPos = 0;
-	std::string temp = "";
-	for (size_t i = 0; i < line.size(); i++)
-	{
-		if (line[i] == str[strPos])
-		{
-			strPos++;
-			temp += line[i];
-			if (strcmp(temp.c_str(), str) == 0)
-			{
-				return true;
-			}
-		}
-		else
-		{
-			strPos = 0;
-			temp = "";
-		}
-	}
-	return false;
-}
-
-bool  WS_StartsWith(const std::string& line, const char* str)
-{
-	size_t length = strlen(str);
-	for (size_t i = 0; i < length; i++)
-	{
-		if (line[i] != str[i])
-			return false;
-	}
-	return true;
-}
 
 // returns -1 if could not find str
 int  WS_FindFirstIndexOf(const std::string& line, const char* str)
@@ -225,45 +190,6 @@ std::string  WS_RemoveAll(const std::string& LINE, const char* str)
 	return result;
 }
 
-std::string  WS_Trim(const std::string& line)
-{
-	size_t startPos = 0;
-	for (startPos = 0; startPos < line.size(); startPos++)
-	{
-		if (line[startPos] != ' ')
-		{
-			break;
-		}
-	}
-	int endPos = 0;
-	for (endPos = line.size(); endPos > 0; endPos--)
-	{
-		if (line[endPos] != ' ')
-		{
-			break;
-		}
-	}
-	return line.substr(startPos, endPos - startPos);
-}
-
-std::string  WS_LowerCase(const std::string& line)
-{
-	std::string result;
-	result.reserve(line.size());
-	for (size_t i = 0; i < line.size(); i++)
-		result += tolower(line[i]);
-	return result;
-}
-
-std::string  WS_UpperCase(const std::string& line)
-{
-	std::string result;
-	result.reserve(line.size());
-	for (size_t i = 0; i < line.size(); i++)
-		result += toupper(line[i]);
-	return result;
-}
-
 int  WS_GetFirstNumber(const std::string& line, bool& fail)
 {
 	auto isNumber = [](char c) throw()->int
@@ -310,30 +236,16 @@ int  WS_GetFirstNumber(const std::string& line, bool& fail)
 	return result;
 }
 
-std::string  WS_ReplaceAll(const std::string& line, const char* Target, const char* Replacement)
-{
-	std::string str = line;
-	std::string from = Target;
-	std::string to = Replacement;
-	size_t start_pos = 0;
-	while ((start_pos = str.find(from, start_pos)) != std::string::npos)
-	{
-		str.replace(start_pos, from.length(), to);
-		start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
-	}
-	return str;
-}
-
 bool  WS_EqualNotCaseSensitive(const std::string& a, const std::string& b)
 {
-	std::string _a = WS_LowerCase(a);
-	std::string _b = WS_LowerCase(b);
+	std::string _a = st_LowerCase(a);
+	std::string _b = st_LowerCase(b);
 	return _a.compare(_b) == 0;
 }
 
 bool  WS_EqualNotCaseSensitive(const std::string& a, const char* b)
 {
-	std::string _a = WS_LowerCase(a);
+	std::string _a = st_LowerCase(a);
 	size_t size = strlen(b);
 	char* _cpy = (char*)alloca(size + 1);
 	for (size_t i = 0; i < size; i++)

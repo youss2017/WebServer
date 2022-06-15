@@ -30,26 +30,35 @@
     <ClCompile Include="HTTPResponse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\StringTools\stringtool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ManageRequest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="startup.hpp">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="..\StringTools\stringtool.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="error.hpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="common.hpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="helper.hpp">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="HTTPResponse.hpp">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="page\index.html" />
+    <ClInclude Include="common.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="startup.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="helper.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ManageRequest.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="page\favicon.ico">

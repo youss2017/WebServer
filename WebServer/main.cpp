@@ -3,137 +3,63 @@
 #include "helper.hpp"
 #include <sstream>
 #include <fstream>
-#include "HTTPResponse.hpp"
-#include <zlib/zlib.h>
+#include <list>
+#include <mutex>
+#include <Shlobj.h>
+#include "ManageRequest.hpp"
 
 #pragma comment(lib, "ws2_32.lib")
-#pragma comment(lib, "zlibstatic.lib")
 
 using namespace std;
 
-const char* pageError404 =
-"<!doctype html>\n"
-"<!-- Requested resource could not be found -->\n"
-"<html lang=\"en-us\">\n"
-"<head><title>Error 404</title></head>\n"
-"<body>\n"
-"<center><h1>404 Not Found</h1></center>\n"
-"</body>\n"
-"</html>\n"
-;
+struct ConnectionManagmentThread {
+	std::list<SOCKET> clients;
+};
 
-std::string HeaderBody() {
-	stringstream ss;
-	ss <<
-		"DATE: " << WS_GetCurrentGMTime() << "\n" <<
-		"Accept-Encoding: identity\n" <<
-		"Connection: Keep-Alive\n";
-	return ss.str();
-}
 
-const char* get_filename_ext(const char* filename) {
-	const char* dot = strrchr(filename, '.');
-	if (!dot || dot == filename) return "";
-	return dot + 1;
-}
-
-string HTTPEvaluate(std::string request, int pos) {
-	int pos2 = WS_FindFirstIndexOf(request, "/");
-	std::string file = WS_Trim(request.substr(pos2 + 1, pos - 5));
-	cout << "'" << file << "'" << endl;
-	auto ReadPageFile = [](const std::string& path, std::string& outContentType, bool& found) throw() -> stringstream {
-		std::ifstream io("page/" + path);
-		stringstream input;
-		if (io) {
-			const char* ext = get_filename_ext(WS_LowerCase(path).c_str());
-			outContentType = WS_GetMIMECode(ext);
-			input << io.rdbuf();
-			found = true;
-		}
-		else {
-			found = false;
-			outContentType = "text/html";
-			input << pageError404;
-		}
-		std::string temp0 = input.str();
-		std::string temp1;
-		temp1.resize(temp0.size() + 12);
-		uLongf dstSize = temp1.size();
-		compress((Bytef*)temp1.c_str(), &dstSize, (Bytef*)temp0.c_str(), temp0.size());
-		stringstream output;
-		output << temp1.substr(0, dstSize);
-		return input;
-	};
-
-	if (file.length() == 0) {
-		// index file
-		file = "index.html";
-	}
-
-	string contentType;
-	bool found;
-	auto input = ReadPageFile(file, contentType, found);
-
-	cout << "Content-Type: " << contentType << endl;
-
-	HTTPResponse response = HTTPResponse(found ? HTTPStatusCode::CODE_200_OK : HTTPStatusCode::CODE_404_NOT_FOUND);
-	response.SetLastModified(WS_GetFileLastModified("page/" + file));
-	response.SetContentType(contentType, false);
-	response.SetConnection(true);
-	response.SetContentEncoding(contentType);
-	response.SetBodyContent(input);
-
-	return response.header.str();
-}
-
-DWORD WINAPI Exp(LPVOID Param) {
-	SOCKET client = (SOCKET)Param;
-
-	auto SendHTTPMessage = [client](std::stringstream& _msg) {
-		std::string msg = _msg.str();
-		WSABUF bufDesc;
-		bufDesc.len = msg.length();
-		bufDesc.buf = (CHAR*)msg.c_str();
-		DWORD sendBytes;
-		WSASend(client, &bufDesc, 1, &sendBytes, 0, nullptr, nullptr);
-	};
+DWORD WINAPI ConnectionThread(LPVOID param) {
+	ConnectionManagmentThread* cmt = (ConnectionManagmentThread*)param;
 
 	while (true) {
-		char recvBuf[1024];
-		WSABUF recvBufDesc;
-		recvBufDesc.len = sizeof(recvBuf);
-		recvBufDesc.buf = recvBuf;
-		DWORD readBytes;
-		DWORD flags = 0;
-		if (WSARecv(client, &recvBufDesc, 1, &readBytes, &flags, nullptr, nullptr) == SOCKET_ERROR) {
-			break;
+		std::vector<std::list<SOCKET>::iterator> disconnectedSockets;
+		disconnectedSockets.reserve(cmt->clients.size());
+		for (auto client = cmt->clients.begin(); client != cmt->clients.end(); client++) {
+			if (WS_ManageRequest(*client) == 0) {
+				closesocket(*client);
+				disconnectedSockets.push_back(client);
+			}
 		}
-		recvBuf[readBytes] = '\0';
-		printf("%.*s", readBytes, recvBuf);
-		// Parse Response
-		int pos = WS_FindFirstIndexOf(recvBuf, "HTTP");
-		if (pos == -1) {
-			HTTPResponse response = HTTPResponse(HTTPStatusCode::CODE_404_NOT_FOUND);
-			response.SetConnection(false);
-			response.SetContentType("text/html", false);
-			const char* page404 = "<!doctype html><html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr/></body></html>";
-			response.SetBodyContent(page404, strlen(page404));
-			SendHTTPMessage(response.header);
-		}
-		else {
-			std::stringstream response;
-			response << HTTPEvaluate(recvBuf, pos);
-			cout << "[" << response.str() << "]\n";
-			SendHTTPMessage(response);
-		}
+		for (auto& ids : disconnectedSockets)
+			cmt->clients.erase(ids);
+		//WSAPoll() would this be actually useful in a server application?
+		Sleep(2);
 	}
 
-	closesocket(client);
 	return 0;
 }
 
+static int CALLBACK BrowseFolderCallback(
+	HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
+{
+	if (uMsg == BFFM_INITIALIZED) {
+		LPCTSTR path = reinterpret_cast<LPCTSTR>(lpData);
+	}
+	return 0;
+}
+
+
 int main(int argc, char** argv) {
 	cout << "Welcome to HTTP/1.1 WebServer" << endl;
+	cout << "Select Page folder" << endl;
+
+	char choosenDirectory[512];
+
+	BROWSEINFOA b{};
+	b.hwndOwner = GetConsoleWindow();
+	b.pszDisplayName = choosenDirectory;
+	b.lpszTitle = "Choose the folder where the website files are located.";
+	b.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+//	SHBrowseForFolderA(&b);
 
 	int port = 80;
 
@@ -155,19 +81,40 @@ int main(int argc, char** argv) {
 	const char CLRF[2] = { '\r', '\n' };
 	const char HTTPVersion[] = "HTTP/1.1\r\n";
 
+	int threadCount = 4;
+	ConnectionManagmentThread* pThreads = new ConnectionManagmentThread[threadCount];
+	for (int i = 0; i < threadCount; i++) {
+		CreateThread(nullptr, 0, ConnectionThread, &pThreads[i], 0, nullptr);
+	}
+
 	while (true) {
 		SOCKADDR_IN clientAddress;
 		SOCKET client = WSAAccept(server, (SOCKADDR*)&clientAddress, nullptr, nullptr, 0);
-		if (client != SOCKET_ERROR) {
-			char szAddrStr[40];
-			InetNtopA(AF_INET, &clientAddress.sin_addr, szAddrStr, sizeof(szAddrStr));
-			cout << "Client Connected, " << szAddrStr << endl;
-			CreateThread(nullptr, 0, Exp, (LPVOID)client, 0, nullptr);
-		}
-		else {
-			cout << "Client connected with an error." << endl;
+		if (client == SOCKET_ERROR) {
+			continue;
 		}
 
+		u_long nonBlocking = 1;
+		if (ioctlsocket(client, FIONBIO, &nonBlocking) == SOCKET_ERROR) {
+			auto s = WS_GetLastError();
+			printf("%s\n", s.c_str());
+			closesocket(client);
+			continue;
+		}
+
+		char szAddrStr[40];
+		InetNtopA(AF_INET, &clientAddress.sin_addr, szAddrStr, sizeof(szAddrStr));
+		cout << "Client Connected, " << szAddrStr << endl;
+
+		int smallestSocketsCount = INFINITE;
+		int chosenThreadIndex = 0;
+		for (int i = 0; i < threadCount; i++) {
+			if (smallestSocketsCount > pThreads[i].clients.size()) {
+				smallestSocketsCount = pThreads[i].clients.size();
+				chosenThreadIndex = i;
+			}
+		}
+		pThreads[chosenThreadIndex].clients.push_back(client);
 	}
 
 	closesocket(server);

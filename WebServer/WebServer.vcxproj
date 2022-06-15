@@ -153,21 +153,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\StringTools\stringtool.cpp" />
     <ClCompile Include="error.cpp" />
     <ClCompile Include="helper.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="HTTPResponse.cpp" />
+    <ClCompile Include="ManageRequest.cpp" />
     <ClCompile Include="startup.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\StringTools\stringtool.hpp" />
     <ClInclude Include="common.hpp" />
     <ClInclude Include="error.hpp" />
     <ClInclude Include="helper.hpp" />
     <ClInclude Include="HTTPResponse.hpp" />
+    <ClInclude Include="ManageRequest.hpp" />
     <ClInclude Include="startup.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="page\index.html" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="page\favicon.ico" />
